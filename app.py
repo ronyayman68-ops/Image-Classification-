@@ -13,7 +13,7 @@ def load_support_model():
 classifier = load_support_model()
 
 # --- UI HEADER ---
-st.title("🛠️ Technical Ticket Classifier")
+st.title("Technical Ticket Classifier")
 st.write("Route development issues to the correct department instantly.")
 
 # --- INPUT SECTION ---
@@ -36,7 +36,7 @@ if st.button("Classify Ticket / تصنيف التذكرة"):
             results = classifier(ticket_text, candidate_labels=departments)
         
         st.divider()
-        st.subheader("📍 Routing Results / نتائج التوجيه")
+        st.subheader("Routing Results / نتائج التوجيه")
         
         # Display the primary department
         top_dept = results['labels'][0]
