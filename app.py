@@ -2,60 +2,55 @@ import streamlit as st
 from transformers import pipeline
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Genre Sniper", layout="centered")
+st.set_page_config(page_title="EngineerSupport AI", layout="centered")
 
-# --- AI MODEL LOADING (Optimized for Accuracy) ---
+# --- AI MODEL LOADING ---
 @st.cache_resource
-def load_specialized_classifier():
-    # Switching to a model that is better at emotional and stylistic nuances
-    return pipeline("text-classification", model="j-hartmann/emotion-english-distilroberta-base", return_all_scores=True)
-
-# Using a robust fallback for genre specifically
-@st.cache_resource
-def load_genre_model():
+def load_support_model():
+    # BART-Large is the "Gold Standard" for accuracy in text classification
     return pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
 
-classifier = load_genre_model()
+classifier = load_support_model()
 
 # --- UI HEADER ---
-st.title("Precision Genre Detector")
-st.write("Specialized in distinguishing **Classic** vs **Hip Hop** styles.")
+st.title("🛠️ Technical Ticket Classifier")
+st.write("Route development issues to the correct department instantly.")
 
 # --- INPUT SECTION ---
-artist = st.text_input("Artist Name", placeholder="e.g., Mozart or Kendrick Lamar")
-lyrics = st.text_area("Lyrics / Description", placeholder="Enter the lines here...")
+ticket_text = st.text_area(
+    "Describe the technical issue / وصف المشكلة التقنية:", 
+    placeholder="e.g., The PySpark job is failing with a memory overflow error..."
+)
 
-# Focused labels for higher accuracy
-specific_genres = ["Classical Music", "Hip Hop / Rap Music"]
+# Professional Technical Categories based on your stack
+departments = [
+    "Database & SQL", 
+    "Frontend (React/UI)", 
+    "Backend (Node.js/ASP.NET)", 
+    "Data Engineering (Spark/ETL)"
+]
 
-if st.button("Deep Scan Genre"):
-    if artist and lyrics:
-        # Combining data for context
-        full_context = f"This is a song by {artist}. The style and lyrics are: {lyrics}"
+if st.button("Classify Ticket / تصنيف التذكرة"):
+    if ticket_text:
+        with st.spinner('Analyzing architecture...'):
+            results = classifier(ticket_text, candidate_labels=departments)
         
-        with st.spinner('Running deep analysis...'):
-            # Multi-label set to False forces the AI to choose the most likely one
-            res = classifier(full_context, candidate_labels=specific_genres, multi_label=False)
-            
         st.divider()
+        st.subheader("📍 Routing Results / نتائج التوجيه")
         
-        # Display the Winner
-        top_genre = res['labels'][0]
-        top_score = res['scores'][0]
+        # Display the primary department
+        top_dept = results['labels'][0]
+        top_score = results['scores'][0]
         
-        if "Classical" in top_genre:
-            st.success(f"Prediction: **CLASSIC** ({top_score*100:.1f}%)")
-        else:
-            st.info(f" Prediction: **HIP HOP** ({top_score*100:.1f}%)")
-            
-        # Comparison Bar
-        st.write("Style Comparison:")
-        cols = st.columns(len(res['labels']))
-        for i, label in enumerate(res['labels']):
-            cols[i].write(label.split(" ")[0])
-            cols[i].progress(res['scores'][i])
-            
+        st.success(f"**Recommended Team:** {top_dept} ({top_score*100:.1f}%)")
+        
+        # Full breakdown for the dashboard
+        for i in range(len(results['labels'])):
+            label = results['labels'][i]
+            score = results['scores'][i]
+            st.write(f"{label}")
+            st.progress(score)
     else:
-        st.warning("Please provide both artist and lyrics for an accurate scan.")
+        st.warning("Please enter ticket details.")
 
-st.caption("Custom Model Logic by Rawan Ayman Saber")
+st.caption("Developed by Rawan Ayman Saber | Data Engineer & Full-Stack Developer")
