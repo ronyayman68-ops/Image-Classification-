@@ -1,46 +1,81 @@
 import streamlit as st
-from transformers import pipeline
-from PIL import Image
+import pandas as pd
+from datetime import datetime
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Image Classification App", layout="centered")
+st.set_page_config(page_title="DevPulse | Project Tracker", layout="wide")
 
-# --- AI MODEL LOADING ---
-@st.cache_resource
-def load_classifier():
-    # Using the Google ViT model as seen in your reference images
-    return pipeline("image-classification", model="google/vit-base-patch16-224")
+# --- CUSTOM CSS FOR MINIMAL LOOK ---
+st.markdown("""
+    <style>
+    .main { background-color: #f8f9fa; }
+    .stButton>button { width: 100%; border-radius: 5px; height: 3em; background-color: #007bff; color: white; }
+    </style>
+    """, unsafe_allow_html=True)
 
-classifier = load_classifier()
+# --- SESSION STATE ---
+if 'tasks' not in st.session_state:
+    st.session_state.tasks = []
 
-# --- UI HEADER ---
-st.title("🖼️ Image Classification App")
-
-# --- FILE UPLOADER (Arabic labels) ---
-uploaded_file = st.file_uploader("...اختار صورة عشان الموديل يحللها", type=["jpg", "jpeg", "png"])
-
-if uploaded_file is not None:
-    # Display the image
-    image = Image.open(uploaded_file)
-    st.image(image, caption="الصورة المرفوعة", use_container_width=True)
+# --- SIDEBAR: ADD NEW TASK ---
+with st.sidebar:
+    st.header("📌 New Task")
+    task_name = st.text_input("Task Title", placeholder="e.g., Setup MongoDB Pipeline")
+    priority = st.select_slider("Priority", options=["Low", "Medium", "High"])
+    category = st.selectbox("Category", ["Frontend", "Backend", "Data Engineering", "Documentation"])
     
-    st.write("---")
-    st.write("...جاري التحليل")
-    
-    # Run classification
-    with st.spinner('Analysing...'):
-        results = classifier(image)
-    
-    st.subheader(":نتائج التصنيف")
-    
-    # Display results with blue progress bars
-    for result in results:
-        label = result['label']
-        score = result['score']
+    if st.button("Add Task"):
+        if task_name:
+            new_task = {
+                "id": len(st.session_state.tasks) + 1,
+                "name": task_name,
+                "priority": priority,
+                "category": category,
+                "status": "Backlog",
+                "date": datetime.now().strftime("%Y-%m-%d %H:%M")
+            }
+            st.session_state.tasks.append(new_task)
+            st.toast(f"Added: {task_name}")
+        else:
+            st.error("Please name the task.")
+
+# --- MAIN DASHBOARD ---
+st.title("🚀 DevPulse Project Board")
+st.write(f"Logged in as **Rawan Ayman Saber**") #
+
+# Quick Metrics
+cols = st.columns(3)
+cols[0].metric("Total Tasks", len(st.session_state.tasks))
+cols[1].metric("In Progress", len([t for t in st.session_state.tasks if t['status'] == "Doing"]))
+cols[2].metric("Completed", len([t for t in st.session_state.tasks if t['status'] == "Done"]))
+
+st.divider()
+
+# --- KANBAN BOARD COLUMNS ---
+c1, c2, c3 = st.columns(3)
+
+sections = {
+    "Backlog": c1,
+    "Doing": c2,
+    "Done": c3
+}
+
+for status, col in sections.items():
+    with col:
+        st.subheader(f" {status}")
+        filtered_tasks = [t for t in st.session_state.tasks if t['status'] == status]
         
-        st.write(f"**{label}: {score*100:.2f}%**")
-        st.progress(score)
-        st.write("") 
-
-else:
-    st.info("الرجاء رفع صورة لبدء عملية التصنيف")
+        for task in filtered_tasks:
+            with st.expander(f"{task['name']}"):
+                st.caption(f"Category: {task['category']} | {task['date']}")
+                st.write(f"Priority: **{task['priority']}**")
+                
+                # Move Logic
+                if status == "Backlog":
+                    if st.button(f"Start →", key=f"start_{task['id']}"):
+                        task['status'] = "Doing"
+                        st.rerun()
+                elif status == "Doing":
+                    if st.button(f"Finish ✔", key=f"done_{task['id']}"):
+                        task['status'] = "Done"
+                        st.rerun()
