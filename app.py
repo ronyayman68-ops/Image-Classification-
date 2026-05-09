@@ -2,42 +2,51 @@ import streamlit as st
 from transformers import pipeline
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="VibeCheck | Genre Classifier", layout="centered")
+st.set_page_config(page_title="Music Classifier Pro", layout="centered")
 
 # --- AI MODEL LOADING ---
 @st.cache_resource
-def load_zero_shot():
-    # This model can classify text into ANY labels you give it
+def load_classifier():
+    # Zero-shot is perfect here because it understands relationships between artists and genres
     return pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
 
-classifier = load_zero_shot()
+classifier = load_classifier()
 
 # --- UI HEADER ---
-st.title("🎵 Music Genre Classifier")
-st.write("Enter lyrics or a song description to identify the genre.")
+st.title("🎵 Artist & Lyric Classifier")
+st.write("Input the artist and lyrics to predict the genre and mood.")
 
-# --- INPUT AREA ---
-text_input = st.text_area("Song Lyrics / Description:", placeholder="e.g., Neon lights and synthesizers playing in the midnight rain...")
+# --- INPUT SECTION ---
+col1, col2 = st.columns([1, 2])
 
-# Labels you want the AI to choose from
-genre_labels = ["Rock", "Hip Hop", "Electronic", "Jazz", "Classical", "Pop"]
+with col1:
+    artist_name = st.text_input("Artist Name", placeholder="e.g., Taylor Swift")
 
-if st.button("Classify Genre"):
-    if text_input:
-        with st.spinner('Analyzing vibes...'):
-            res = classifier(text_input, candidate_labels=genre_labels)
-            
-        st.divider()
-        st.subheader(":نتائج التصنيف") # Keeping your Arabic header style
+with col2:
+    lyrics_text = st.text_area("Song Lyrics", placeholder="Enter a few lines here...")
+
+# Define what we want to detect
+genres = ["Pop", "Rock", "Hip Hop", "Country", "Jazz", "Electronic"]
+
+if st.button("Analyze Song"):
+    if artist_name and lyrics_text:
+        # We combine both inputs for better context
+        combined_text = f"Artist: {artist_name}. Lyrics: {lyrics_text}"
         
-        # Show top 3 results
+        with st.spinner('Analyzing artist style and lyrics...'):
+            results = classifier(combined_text, candidate_labels=genres)
+        
+        st.divider()
+        st.subheader(":نتائج التحليل") # Arabic subheader per your style
+        
+        # Display results with blue progress bars
         for i in range(3):
-            label = res['labels'][i]
-            score = res['scores'][i]
-            
-            st.write(f"**{label}: {score*100:.2f}%**")
+            label = results['labels'][i]
+            score = results['scores'][i]
+            st.write(f"**{label}** ({score*100:.1f}%)")
             st.progress(score)
+            
     else:
-        st.warning("Please enter some text first.")
+        st.warning("Please provide both an Artist and some Lyrics.")
 
-st.caption("Built for Rawan's Portfolio")
+st.caption("Developed by Rawan Ayman Saber")
