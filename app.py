@@ -17,7 +17,7 @@ st.title("Technical Ticket Classifier")
 st.write("Route development issues to the correct department instantly.")
 
 # --- INPUT SECTION ---
-ticket_text = st.text_area(
+track_text = st.text_area(
     "Describe the technical issue / وصف المشكلة التقنية:", 
     placeholder="e.g., The PySpark job is failing with a memory overflow error..."
 )
@@ -30,10 +30,10 @@ departments = [
     "Data Engineering (Spark/ETL)"
 ]
 
-if st.button("Classify Ticket / تصنيف التذكرة"):
-    if ticket_text:
+if st.button("Classify Track"):
+    if track_text:
         with st.spinner('Analyzing architecture...'):
-            results = classifier(ticket_text, candidate_labels=departments)
+            results = classifier(track_text, candidate_labels=departments)
         
         st.divider()
         st.subheader("Routing Results / نتائج التوجيه")
